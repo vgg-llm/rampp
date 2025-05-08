@@ -26,17 +26,49 @@ def generate_replica_metadata(path_to_dir):
         for text in out_texts:
             f.write(text + "\n")
 
-def generate_metadata(dataset_name, path_to_dir):
 
+def generate_scannet_metadata(path_to_dir):
+    PATH_TO_TRAIN_SCENES = "./metadata/scannetv2_train.txt"
+    PATH_TO_VAL_SCENES = "./metadata/scannetv2_val.txt"
+    
+    with open(PATH_TO_TRAIN_SCENES, "r") as f:
+        train_scenes = f.readlines()
+
+    with open(PATH_TO_VAL_SCENES, "r") as f:
+        val_scenes = f.readlines()
+
+    all_scenes = sorted(train_scenes + val_scenes)
+
+    out_texts = []
+    for scene in all_scenes:
+        scene = scene.strip()
+        path_to_scene = Path(path_to_dir) / scene
+
+        path_to_images = path_to_scene / "color"
+        image_paths = list(path_to_images.glob("*.jpg")) + list(path_to_images.glob("*.png"))
+        for image_path in natsorted(image_paths):
+            name = image_path.stem
+            name_wo_ext = name.split(".")[0]
+            object_path = path_to_scene / "objects" / f"{name_wo_ext}.txt"
+            out_texts.append(f"{image_path} {object_path}")
+
+    with open(Path("metadata", "scannetv2_ramplus_list.txt"), "w") as f:
+        for text in out_texts:
+            f.write(text + "\n")
+
+
+def generate_metadata(dataset_name, path_to_dir):
     if dataset_name == "replica":
         generate_replica_metadata(path_to_dir)
+    elif dataset_name == "scannet":
+        generate_scannet_metadata(path_to_dir)
     else:
         raise ValueError(f"Unsupported dataset: {dataset_name}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_name", type=str, choices=["replica"], default="replica")
+    parser.add_argument("--dataset_name", type=str, default="replica")
     parser.add_argument("--path_to_dir", type=str, default="/data/3d_pcd/data/replica_2d")
     args = parser.parse_args()
 
